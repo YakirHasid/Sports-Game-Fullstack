@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="../Scripts/jquery-3.4.1.min.js"></script>
+
+    <style>
+        table {
+            border-collapse: collapse;
+            border-spacing: 15px;
+        }
+
+        table, tr, td, th {
+            border: 1px solid black;
+        }
+
+        input {
+            margin-top: 15px;
+        }
+
+        tr.bigger {
+            background-color: yellow;
+        }
+
+        th {
+            background-color: aqua;
+        }
+
+        p.successfull {
+            color: green;
+            font-weight: bold;
+        }
+
+        p.failed {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+
+    <script>
+
+        // creates a basic table
+        function initTable() {
+            let div = document.getElementById("tableContainer");
+            div.innerHTML = "";
+
+            let table = document.createElement("table");
+            table.setAttribute("id", "tableElm");
+
+            let headerRow = document.createElement("tr");
+            headerRow.setAttribute("id", "headerRow");
+
+            let col1 = document.createElement("th");
+            let col2 = document.createElement("th");
+            let col3 = document.createElement("th");
+            let col4 = document.createElement("th");            
+
+            col1.innerText = "Id";
+            col2.innerText = "Name";
+            col3.innerText = "TotalScore";
+            col4.innerText = "TotalShots";
+
+            headerRow.appendChild(col1);
+            headerRow.appendChild(col2);
+            headerRow.appendChild(col3);
+            headerRow.appendChild(col4);
+
+            table.appendChild(headerRow);
+
+            div.appendChild(table);
+        }
+
+        function loadPlayers() {
+
+            // get all the required information from the fields
+            let searchTextField = document.getElementById("searchTextField");
+
+            let gameId = searchTextField.value;
+
+            let div = document.getElementById("tableContainer");            
+
+            // initiates the table, incase information is already written
+            initTable();
+
+            // ajax call to get all the player's summaries for the given game
+            $.ajax({
+                dataType: "json",
+                url: `/api/solution/Q1/${gameId}`,
+                contentType: "application/json",
+                type: "GET",
+                //data:  JSON.stringify(),
+                success: function (data) {
+
+                    // fill the table with the given player's summaries in the given game
+                    let table = document.getElementById("tableElm");
+                    
+                    for (var i = 0; i < data.length; i++) {
+                        let tr = document.createElement("tr");
+                        let tdPlayerId = document.createElement("td");
+                        let tdPlayerName = document.createElement("td");
+                        let tdTotalScore = document.createElement("td");
+                        let tdTotalShots = document.createElement("td");
+
+                        tdPlayerId.innerText = data[i].PlayerId;
+                        tdPlayerName.innerText = data[i].PlayerName;
+                        tdTotalScore.innerText = data[i].TotalScore;
+                        tdTotalShots.innerText = data[i].TotalShots;
+
+                        tr.appendChild(tdPlayerId);
+                        tr.appendChild(tdPlayerName);
+                        tr.appendChild(tdTotalScore);
+                        tr.appendChild(tdTotalShots);
+
+                        table.appendChild(tr);
+                    }
+
+                    div.appendChild(table);
+
+                },
+                error: function (err) {
+                    console.log(err);
+                }
+            });
+        }
+
+        // add a new shot into the database
+        function addShot() {
+
+            // get all the required information from the fields
+            let playerIdField = document.getElementById("playerIdField");
+            let scoreField = document.getElementById("scoreField");
+            let searchTextField = document.getElementById("searchTextField");
+
+            let gameId = searchTextField.value;
+
+            // create a new shot using the given information
+            var newShot = {
+                "PlayerId": playerIdField.value,
+                "ShotScore": scoreField.value,
+            };
+
+            // display container for message from server
+            let displayContainer = document.getElementById("displayContainer");
+
+            displayContainer.innerHTML = "";
+
+            let pDisplay = document.createElement("p");
+
+            displayContainer.appendChild(pDisplay);
+
+
+            // ajax call to add a new shot into the database
+            $.ajax({
+                dataType: "json",
+                url: `/api/solution/Q2/${gameId}`,
+                contentType: "application/json",
+                type: "POST",
+                data: JSON.stringify(newShot),
+                success: function (data) {
+
+                    // decided to make all call returns default status OK 200
+                    // its possible to wrap the failed returns with appropriate failed status                    
+
+                    console.log(data);
+
+                    if (data == "Updated Successfully") {
+                        pDisplay.classList.add("successfull");                        
+
+                        // refresh the table because of the newly added shot
+                        loadPlayers();
+                    }
+                    else {
+                        pDisplay.classList.add("failed");
+
+                        pDisplay.innerText = data;
+
+                        // no need to refresh the table if no shot has been added
+                    }
+
+                },
+                error: function (err) {
+
+                    pDisplay.innerText = "Error has occurred";
+                    pDisplay.classList.add("failed");
+
+                    console.log(err);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <div id="searchContainer">
+        <h1>
+            Players By Game
+        </h1>
+
+        <span>Insert Game Id: </span><input id="searchTextField" type="text" placeholder="Game Id" />
+
+        <button id="searchBtn" value="search" onclick="loadPlayers()">Search Players</button>
+    </div>
+
+    <br />
+
+    <div id="tableContainer">
+
+    </div>
+
+    <br />
+
+    <div id="updateContainer">
+        <h1>
+            Add Shot to player in this game
+        </h1>
+
+        <span>Player Id: </span><input id="playerIdField" type="text" placeholder="player id" />
+        <span>Score: </span><input id="scoreField" type="text" placeholder="score" />
+        <button id="updateBtn" onclick="addShot()">Add Shot</button>
+    </div>
+
+    <div id="displayContainer">
+
+    </div>
+
+    <script>
+        initTable();
+    </script>
+</body>
+</html>
